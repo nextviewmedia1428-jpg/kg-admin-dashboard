@@ -1,11 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hashPassphrase } from "@/lib/admin-auth";
 
 const PUBLIC_PATHS = ["/login", "/api/login"];
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-  const isAuthed = req.cookies.get("admin_auth")?.value === process.env.ADMIN_PASSPHRASE;
+  const cookieValue = req.cookies.get("admin_auth")?.value;
+  const isAuthed =
+    !!cookieValue &&
+    !!process.env.ADMIN_PASSPHRASE &&
+    cookieValue === (await hashPassphrase(process.env.ADMIN_PASSPHRASE));
 
   if (!isAuthed && !isPublic) {
     const url = req.nextUrl.clone();
